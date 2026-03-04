@@ -1,4 +1,4 @@
-import {cpSync, mkdirSync, rmSync} from "fs";
+import {cpSync, mkdirSync, readdirSync, rmSync} from "fs";
 const mod_name = "farmoreos";
 console.log("clear...");
 rmSync("dist", {force: true, recursive: true});
@@ -20,8 +20,34 @@ await Bun.write("dist/src/info.json", JSON.stringify({
     "author": "pfg",
     "factorio_version": "2.0",
     "dependencies": ["base >= 2.0"],
-    "description": "Farming mod for Factorio."
+    "description": "Farming mod for Factorio.",
+    "spoiling_required": true,
 }));
+// generate locale
+const all_src = readdirSync("src", {recursive: true});
+const gen_locale: Map<string, Map<string, string>> = new Map();
+for (const src_file of all_src) {
+    if (typeof src_file !== "string") continue;
+    if (src_file.startsWith(".")) continue;
+    if (!src_file.endsWith(".ts")) continue;
+    // @ts-ignore
+    const content: string = await Bun.file("src/"+src_file).text();
+    const names = content.matchAll(/\/\/\s*@name([^\n]+)\n/g)
+    for (const [, content] of names) {
+        const [, category, key, value] = content.match(/^\s+([^=. ]+)\.([^= ]+)=(.+)$/) ?? (() => {
+            throw new Error("bad name on line "+content);
+        });
+        if (!gen_locale.has(category)) gen_locale.set(category, new Map());
+        const cat = gen_locale.get(category)!;
+        if (cat.has(key)) throw new Error(`duplicate ${category}.${key}`);
+        cat.set(key, value);
+    }
+}
+// @ts-ignore
+await Bun.write("dist/src/locale/en/locale.cfg", [...gen_locale.entries()].map(([category, values]) => {
+    return `[${category}]` + [...values.entries()].map(([k, v]) => `\n${k}=${v}`);
+}).join("\n\n"));
+
 // copy to mods folder
 const mods_folder = "C:\\Users\\pfg\\AppData\\Roaming\\Factorio\\mods";
 console.log("clear factorio mod...");
