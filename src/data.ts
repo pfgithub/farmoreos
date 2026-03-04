@@ -1,5 +1,5 @@
 import { PrototypeData, ActiveMods, FeatureFlags } from "factorio:common"
-import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ToolPrototype, ItemGroup, ItemSubGroup } from "factorio:prototype";
+import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ToolPrototype, ItemGroup, ItemSubGroup, CapsulePrototype } from "factorio:prototype";
 import * as util from "util";
 declare const data: PrototypeData;
 declare const mods: ActiveMods;
@@ -89,6 +89,42 @@ data.extend([{
 } satisfies ItemSubGroup]);
 
 data.extend([{
+    type: "capsule",
+    stack_size: 1,
+    name: "farmoreos-empty-watering-can",
+    icon: "__farmoreos__/art/watering-can.png",
+    icon_size: 32,
+    subgroup: "farmoreos-tools",
+    capsule_action: {
+        type: "use-on-self",
+        uses_stack: false,
+        attack_parameters: {
+            type: "projectile",
+            activation_type: "consume",
+            ammo_category: "capsule",
+            cooldown: 30,
+            range: 0,
+            ammo_type: {
+                target_type: "position",
+                action: {
+                    type: "direct",
+                    action_delivery: {
+                        type: "instant",
+                        target_effects: [
+                            {
+                                type: "damage",
+                                damage: {type: "physical", amount: 0},
+                                use_substitute: false,
+                            }
+                        ],
+                    },
+                },
+            },
+        },
+    },
+} satisfies CapsulePrototype]);
+
+data.extend([{
     type: "tool",
     stack_size: 1,
     name: "farmoreos-watering-can",
@@ -108,7 +144,7 @@ data.extend([{
     ingredients: [
         {type: "item", name: "iron-plate", amount: 10},
     ],
-    results: [{type: "item", name: "farmoreos-watering-can", amount: 1}],
+    results: [{type: "item", name: "farmoreos-empty-watering-can", amount: 1, percent_spoiled: 0.9}],
 } satisfies RecipePrototype]);
 
 

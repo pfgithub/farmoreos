@@ -25,3 +25,25 @@ script.on_event(defines.events.on_lua_shortcut, event => {
         game.reload_mods();
     }
 });
+
+script.on_event(defines.events.on_player_used_capsule, event => {
+    if (event.item.name === "farmoreos-empty-watering-can") {
+        const player = game.get_player(event.player_index);
+        if (!player) return;
+        if (player.cursor_stack?.name != "farmoreos-empty-watering-can") return;
+        const tile = player.surface.get_tile(event.position);
+        if (tile.prototype.fluid?.name === "water") {
+            player.cursor_stack.set_stack({name: "farmoreos-watering-can", count: 1, durability: 50});
+        } else {
+            player.create_local_flying_text({
+                text: ["error.farmoreos-no-water"],
+                color: {r: 1, g: 0, b: 0},
+                position: event.position,
+            });
+        }
+    }
+});
+
+function dump(a: any) {
+    game.print(serpent.block(a));
+}
