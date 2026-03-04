@@ -34,6 +34,7 @@ for (const src_file of all_src) {
     const content: string = await Bun.file("src/"+src_file).text();
     const names = content.matchAll(/\/\/\s*@name([^\n]+)\n/g)
     for (const [, content] of names) {
+        // @ts-ignore
         const [, category, key, value] = content.match(/^\s+([^=. ]+)\.([^= ]+)=(.+)$/) ?? (() => {
             throw new Error("bad name on line "+content);
         });

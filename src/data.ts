@@ -293,8 +293,8 @@ data.extend([{
                 size: 32,
                 frame_count: 1,
             },
-            leaf_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 1, initial_vertical_speed: 0.01, speed_from_center: 0.01},
-            branch_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 1, initial_vertical_speed: 0.01, speed_from_center: 0.01},
+            leaf_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 0.5, initial_vertical_speed: 0.01, speed_from_center: 0.01},
+            branch_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 0.5, initial_vertical_speed: 0.01, speed_from_center: 0.01},
         }
     ],
     growth_ticks: 2 * day_to_ticks,
