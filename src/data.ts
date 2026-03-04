@@ -3,6 +3,7 @@ import { EntityPrototypeFlags } from "factorio:prototype";
 import { CapsuleAction } from "factorio:prototype";
 import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ToolPrototype, ItemGroup, ItemSubGroup, CapsulePrototype, ItemPrototype, TilePrototype, CollisionLayerPrototype, PlantPrototype, RecipeCategory } from "factorio:prototype";
 import * as util from "util";
+import { day_to_seconds, day_to_ticks } from "./constants";
 declare const data: PrototypeData;
 declare const mods: ActiveMods;
 declare const feature_flags: FeatureFlags;
@@ -133,27 +134,21 @@ data.extend([{
 } satisfies CapsulePrototype]);
 
 data.extend([{
-    type: "tool",
+    type: "capsule",
     stack_size: 1,
     // @name item-name.farmoreos-watering-can=Watering Can (Full)
     name: "farmoreos-watering-can",
-    durability: 50,
-    durability_description_key: "description.farmoreos-watering-can-remaining-amount-key",
+    // durability: 50,
+    // durability_description_key: "description.farmoreos-watering-can-remaining-amount-key",
     icon: "__farmoreos__/art/watering-can.png",
     icon_size: 32,
     subgroup: "farmoreos-tools",
+    capsule_action: noneEffect(),
     order: "c",
-    place_as_tile: {
-        result: "farmoreos-farmland-wet",
-        condition_size: 1,
-        condition: {
-            layers: {water_tile: true},
-        },
-    },
-} satisfies ToolPrototype]);
+} satisfies CapsulePrototype]);
 
 data.extend([{
-    type: "item",
+    type: "capsule",
     stack_size: 1,
     // @name item-name.farmoreos-hoe=Hoe
     name: "farmoreos-hoe",
@@ -161,14 +156,8 @@ data.extend([{
     icon_size: 32,
     subgroup: "farmoreos-tools",
     order: "a",
-    place_as_tile: {
-        result: "farmoreos-farmland-dry",
-        condition_size: 1,
-        condition: {
-            layers: {water_tile: true},
-        },
-    },
-} satisfies ItemPrototype]);
+    capsule_action: noneEffect(),
+} satisfies CapsulePrototype]);
 
 data.extend([{
     type: "recipe",
@@ -198,7 +187,6 @@ data.extend([{
 data.extend([{
     type: "recipe",
     name: "farmoreos-hoe",
-    enabled: true,
     energy_required: 8, // time to craft in seconds (at crafting speed 1)
     ingredients: [
         {type: "item", name: "iron-plate", amount: 10},
@@ -237,7 +225,6 @@ data.extend([{
     absorptions_per_second: {pollution: 0.000025},
     minable: {mining_time: 0.1},
     decorative_removal_probability: 1,
-    is_foundation: true,
 } satisfies TilePrototype]);
 data.extend([{
     // @name tile-name.farmoreos-farmland-wet=Farmland (Wet)
@@ -267,7 +254,6 @@ data.extend([{
     absorptions_per_second: {pollution: 0.000025},
     minable: {mining_time: 0.1},
     decorative_removal_probability: 1,
-    is_foundation: true,
     placeable_by: {item: "farmoreos-watering-can", count: 1},
 } satisfies TilePrototype]);
 
@@ -279,10 +265,6 @@ data.extend([{
     type: "collision-layer",
     name: "farmoreos_farmland_dry",
 } satisfies CollisionLayerPrototype]);
-
-
-const day_to_ticks = 25200;
-const day_to_seconds = day_to_ticks / 60;
 
 const plant_flags: EntityPrototypeFlags = ["placeable-neutral", "breaths-air"]; // "placeable-off-grid"?
 data.extend([{

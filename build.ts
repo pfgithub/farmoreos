@@ -3,8 +3,8 @@ const mod_name = "farmoreos";
 console.log("clear...");
 rmSync("dist", {force: true, recursive: true});
 console.log("src...");
-mkdirSync("dist/src", {recursive: true});
-cpSync("src", "dist/src", {recursive: true});
+mkdirSync("dist", {recursive: true});
+cpSync("src/art", "dist/art", {recursive: true});
 console.log("tstl...");
 // @ts-ignore
 Bun.spawnSync({
@@ -13,7 +13,7 @@ Bun.spawnSync({
 });
 console.log("info.json");
 // @ts-ignore
-await Bun.write("dist/src/info.json", JSON.stringify({
+await Bun.write("dist/info.json", JSON.stringify({
     "name": mod_name,
     "version": "0.1.0",
     "title": "Farmoreos",
@@ -43,15 +43,23 @@ for (const src_file of all_src) {
         cat.set(key, value);
     }
 }
+// bundle fix
 // @ts-ignore
-await Bun.write("dist/src/locale/en/locale.cfg", [...gen_locale.entries()].map(([category, values]) => {
-    return `[${category}]` + [...values.entries()].map(([k, v]) => `\n${k}=${v}`);
+await Bun.write("dist/locale/en/locale.cfg", [...gen_locale.entries()].map(([category, values]) => {
+    return `[${category}]` + [...values.entries()].map(([k, v]) => `\n${k}=${v}`).join("");
 }).join("\n\n"));
-
+// file location fix
+for (const name of ["control", "data", "settings"]) {
+    // @ts-ignore
+    if (await Bun.file(`dist/src/${name}.lua`).exists()) {
+        // @ts-ignore
+        await Bun.write(`dist/${name}.lua`, `return require("src.${name}")`);
+    }
+}
 // copy to mods folder
 const mods_folder = "C:\\Users\\pfg\\AppData\\Roaming\\Factorio\\mods";
 console.log("clear factorio mod...");
 rmSync(mods_folder + "/" + mod_name, {force: true, recursive: true});
 console.log("write factorio mod...");
-cpSync("dist/src", mods_folder + "/farmoreos", {recursive: true});
+cpSync("dist", mods_folder + "/farmoreos", {recursive: true});
 console.log("done");

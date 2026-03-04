@@ -1,6 +1,40 @@
-import { LuaGameScript } from "factorio:runtime";
+import { LuaGameScript, TileWrite } from "factorio:runtime";
+import { day_to_ticks } from "./constants";
 
 declare const game: LuaGameScript;
+declare const storage: {
+    queue?: Queue,
+};
+
+type Queue = {
+    start: number,
+    end: number,
+    entries: QueueItem[],
+};
+type QueueItem = {
+    k: "uw", // uw = "unwater"
+    t: number, // game.tick
+    s: string, // surface
+    p: [number, number][],
+};
+function getQueue(): Queue {
+    storage.queue ??= {start: 0, end: 0, entries: []};
+    return storage.queue;
+}
+function queueEnqueue(queue: Queue, item: QueueItem) {
+    queue.entries[queue.end] = item;
+    queue.end += 1;
+}
+function queuePeek(queue: Queue): QueueItem | undefined {
+    return queue.entries[queue.start];
+}
+function queueDequeue(queue: Queue): QueueItem | undefined {
+    const value = queuePeek(queue);
+    if (value == undefined) return;
+    delete queue.entries[queue.start];
+    queue.start += 1;
+    return value;
+}
 
 script.on_event(defines.events.on_lua_shortcut, event => {
     if (event.prototype_name == "farmoreos-cheat") {
@@ -37,10 +71,54 @@ script.on_event(defines.events.on_player_used_capsule, event => {
             player.cursor_stack.set_stack({name: "farmoreos-watering-can", count: 1, durability: 50});
         } else {
             player.create_local_flying_text({
-                text: ["error.farmoreos-no-water"],
+                text: ["error.farmoreos-no-water"], // @name error.farmoreos-no-water=Not water
                 color: {r: 1, g: 0, b: 0},
                 position: event.position,
             });
+        }
+    } else if (event.item.name === "farmoreos-hoe") {
+        const player = game.get_player(event.player_index);
+        if (!player) return;
+        const tile = player.surface.get_tile(event.position);
+        if (tile.prototype.collision_mask.layers.farmoreos_farmable) {
+            const hidden_tile = player.surface.get_hidden_tile(event.position);
+            if (hidden_tile == null) return; // uh oh!
+            const dbl_hidden_tile = player.surface.get_double_hidden_tile(event.position);
+            player.surface.set_double_hidden_tile(event.position, undefined);
+            player.surface.set_hidden_tile(event.position, dbl_hidden_tile);
+            player.surface.set_tiles([{name: hidden_tile, position: event.position}]);
+        } else if (!tile.prototype.fluid) {
+            player.surface.set_tiles([{name: "farmoreos-farmland-dry", position: event.position}], true, "abort_on_collision", true, true, player);
+        } else {
+            player.create_local_flying_text({
+                text: ["error.farmoreos-hoe-water"], //@name error.farmoreos-hoe-water=Cannot hoe fluid
+                color: {r: 1, g: 0, b: 0},
+                position: event.position,
+            });
+        }
+    } else if (event.item.name === "farmoreos-watering-can") {
+        const player = game.get_player(event.player_index);
+        if (!player) return;
+        if (player.cursor_stack?.name != "farmoreos-watering-can") return;
+
+        const new_health = player.cursor_stack.health - (1 / 50);
+        if (new_health <= 0) {
+            player.cursor_stack.set_stack({name: "farmoreos-watering-can-empty"});
+        }else {
+            player.cursor_stack.set_stack({name: "farmoreos-watering-can", health: new_health});
+        }
+
+        player.surface.create_particle({
+            name: "tintable-water-particle",
+            position: event.position,
+            movement: [0, 0.01],
+            height: 0, vertical_speed: 0.01, frame_speed: 1,
+        });
+
+        const tile = player.surface.get_tile(event.position);
+        if (tile.name === "farmoreos-farmland-dry") {
+            player.surface.set_tiles([{name: "farmoreos-farmland-wet", position: event.position}], true, "abort_on_collision", true, true, player);
+            queueEnqueue(getQueue(), {k: "uw", t: game.tick + day_to_ticks * 1, s: player.surface.name, p: [[math.floor(event.position.x), math.floor(event.position.y)]]});
         }
     }
 });
@@ -49,6 +127,29 @@ script.on_event(defines.events.on_player_built_tile, event => {
         const player = game.get_player(event.player_index);
         if (!player) return;
         player.cursor_stack?.set_stack({name: "farmoreos-hoe", count: event.tiles.length});
+    }
+});
+
+function executeQueueItem(item: QueueItem) {
+    if (item.k !== "uw") return;
+    const surface = game.get_surface(item.s);
+    if (!surface) return;
+    const set_tiles: TileWrite[] = [];
+    for (const position of item.p) {
+        const tile = surface.get_tile(position[0], position[1]);
+        if (tile.name !== "farmoreos-farmland-wet") continue;
+        set_tiles.push({name: "farmoreos-farmland-dry", position});
+    }
+    surface.set_tiles(set_tiles);
+}
+
+script.on_event(defines.events.on_tick, event => {
+    const queue = getQueue();
+    for (let i = 0; i < 2; i += 1) {
+        const peek = queuePeek(queue);
+        if (!peek || peek.t > game.tick) break;
+        queueDequeue(queue);
+        executeQueueItem(peek);
     }
 });
 
