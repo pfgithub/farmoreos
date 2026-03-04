@@ -1,15 +1,3 @@
-# farmoreos
-
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.8. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+https://lua-api.factorio.com/latest/prototypes.html
+https://lua-api.factorio.com/latest/events.html
+https://github.com/wube/factorio-data/blob/master/base/prototypes/item.lua
