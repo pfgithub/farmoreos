@@ -1,0 +1,16 @@
+{
+  "name": "farmoreos",
+  "module": "index.ts",
+  "dependencies": {
+    "typed-factorio": "^3.35.0",
+    "typescript-to-lua": "^1.33.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "private": true,
+  "scripts": {
+    "build": "bun ./build"
+  },
+  "type": "module"
+}
