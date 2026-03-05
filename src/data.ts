@@ -697,8 +697,6 @@ data.extend([{
     order: nextOrder(),
     stack_size: 10,
     capsule_action: damageEffect(-5, 30),
-    spoil_ticks: day_to_ticks * 3, // TODO: food preservation
-    spoil_result: "spoilage",
 } satisfies CapsulePrototype]);
 data.extend([{
     type: "item",
@@ -742,8 +740,6 @@ data.extend([{
     order: nextOrder(),
     stack_size: 100,
     capsule_action: damageEffect(-300, 300),
-    spoil_ticks: day_to_ticks * 5,
-    spoil_result: "spoilage",
 } satisfies CapsulePrototype]);
 addCookable({
     type: "capsule",
@@ -756,8 +752,6 @@ addCookable({
     order: nextOrder(),
     stack_size: 100,
     capsule_action: damageEffect(-50, 15),
-    spoil_ticks: day_to_ticks * 3,
-    spoil_result: "spoilage",
 } satisfies CapsulePrototype, "farmoreos-toast-cooking", hour_to_ticks / 60 * 5);
 addCookable({
     type: "capsule",
@@ -770,8 +764,6 @@ addCookable({
     order: nextOrder(),
     stack_size: 100,
     capsule_action: damageEffect(-50, 15),
-    spoil_ticks: day_to_ticks * 3,
-    spoil_result: "spoilage",
 } satisfies CapsulePrototype, "coal", hour_to_ticks / 60 * 2);
 
 data.extend([{
