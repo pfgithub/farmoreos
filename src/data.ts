@@ -357,7 +357,7 @@ addPlant({
     minable: {
         mining_time: 0.01,
         results: [
-            {type: "item", name: "farmoreos-wheat", amount: 1},
+            {type: "item", name: "farmoreos-wheat", amount: 10},
             {type: "item", name: "farmoreos-wheat-seeds", amount: 1, extra_count_fraction: 0.1}, // ideally we would always give 1 even if not fully grown
         ],
     },
@@ -483,7 +483,7 @@ data.extend([{
         {type: "item", name: "farmoreos-wheat-seeds", amount: 1},
     ],
     results: [
-        {type: "item", name: "farmoreos-wheat", amount: 1},
+        {type: "item", name: "farmoreos-wheat", amount: 10},
         {type: "item", name: "farmoreos-wheat-seeds", amount: 1, extra_count_fraction: 0.1},
     ],
 } satisfies RecipePrototype]);
@@ -642,8 +642,9 @@ function addCookable(item: unknown, cook_to: string, cook_time: number) {
         order: nextOrder(),
         ingredients: [{type: "item", name: cooled.name, amount: 1}],
         results: [{type: "item", name: heated.name, amount: 1}],
-        energy_required: 1,
+        energy_required: 0.002,
         result_is_always_fresh: true,
+        auto_recycle: false,
         subgroup: "farmoreos-heating",
     } satisfies RecipePrototype]);
     data.extend([{
@@ -656,8 +657,9 @@ function addCookable(item: unknown, cook_to: string, cook_time: number) {
         order: nextOrder(),
         ingredients: [{type: "item", name: heated.name, amount: 1}],
         results: [{type: "item", name: cooled.name, amount: 1}],
-        energy_required: 1,
+        energy_required: 0.002,
         result_is_always_fresh: true,
+        auto_recycle: false,
         subgroup: "farmoreos-cooling",
     } satisfies RecipePrototype]);
 }
@@ -673,9 +675,10 @@ data.extend([{
     stack_size: 100,
     capsule_action: damageEffect(-5, 30),
 } satisfies CapsulePrototype]);
-data.extend([{
+addCookable({
     type: "capsule",
     // @name item-name.farmoreos-dough-unrisen=Dough (Unrisen)
+    // @name item-name.farmoreos-dough-unrisen-cooking=Dough (Unrisen) (Cooking)
     name: "farmoreos-dough-unrisen",
     icon: "__farmoreos__/art/dough-unrisen.png",
     icon_size: 32,
@@ -686,8 +689,8 @@ data.extend([{
     spoil_ticks: (hour_to_ticks * 4),
     spoil_result: "farmoreos-dough-risen",
     // we should add a slow conveyor belt for rising the dough
-} satisfies CapsulePrototype]);
-data.extend([{
+} satisfies CapsulePrototype, "coal", hour_to_ticks / 60 * 10);
+addCookable({
     type: "capsule",
     // @name item-name.farmoreos-dough-risen=Dough (Risen)
     name: "farmoreos-dough-risen",
@@ -697,40 +700,8 @@ data.extend([{
     order: nextOrder(),
     stack_size: 10,
     capsule_action: damageEffect(-5, 30),
-} satisfies CapsulePrototype]);
-data.extend([{
-    type: "item",
-    // @name item-name.farmoreos-bread-pan=Bread Pan
-    name: "farmoreos-bread-pan",
-    icon: "__farmoreos__/art/bread-pan.png",
-    icon_size: 32,
-    subgroup: "farmoreos-products",
-    order: nextOrder(),
-    stack_size: 10,
-} satisfies ItemPrototype]);
+} satisfies CapsulePrototype, "farmoreos-bread-cooking", hour_to_ticks / 60 * 60);
 addCookable({
-    type: "item",
-    // @name item-name.farmoreos-dough-panned=Dough (Panned)
-    // @name item-name.farmoreos-dough-panned-cooking=Dough (Panned) (Cooking)
-    name: "farmoreos-dough-panned",
-    icon: "__farmoreos__/art/dough-panned.png",
-    icon_size: 32,
-    subgroup: "farmoreos-products",
-    order: nextOrder(),
-    stack_size: 10,
-} satisfies ItemPrototype, "farmoreos-dough-cooked-cooking", hour_to_ticks / 60 * 30);
-addCookable({
-    type: "item",
-    // @name item-name.farmoreos-dough-cooked=Bread (Panned)
-    // @name item-name.farmoreos-dough-cooked-cooking=Bread (Panned) (Cooking)
-    name: "farmoreos-dough-cooked",
-    icon: "__farmoreos__/art/dough-cooked.png",
-    icon_size: 32,
-    subgroup: "farmoreos-products",
-    order: nextOrder(),
-    stack_size: 10,
-} satisfies ItemPrototype, "coal", hour_to_ticks / 60 * 10);
-data.extend([{
     type: "capsule",
     // @name item-name.farmoreos-bread=Bread
     name: "farmoreos-bread",
@@ -740,7 +711,7 @@ data.extend([{
     order: nextOrder(),
     stack_size: 100,
     capsule_action: damageEffect(-300, 300),
-} satisfies CapsulePrototype]);
+} satisfies CapsulePrototype, "coal", hour_to_ticks / 60 * 30);
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-bread-slice=Bread Slice
@@ -752,7 +723,7 @@ addCookable({
     order: nextOrder(),
     stack_size: 100,
     capsule_action: damageEffect(-50, 15),
-} satisfies CapsulePrototype, "farmoreos-toast-cooking", hour_to_ticks / 60 * 5);
+} satisfies CapsulePrototype, "farmoreos-toast-cooking", hour_to_ticks / 60 * 20);
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-toast=Toast
@@ -764,23 +735,8 @@ addCookable({
     order: nextOrder(),
     stack_size: 100,
     capsule_action: damageEffect(-50, 15),
-} satisfies CapsulePrototype, "coal", hour_to_ticks / 60 * 2);
+} satisfies CapsulePrototype, "coal", hour_to_ticks / 60 * 10);
 
-data.extend([{
-    type: "recipe",
-    name: "farmoreos-bread-pan",
-    icon: "__farmoreos__/art/bread-pan.png",
-    icon_size: 32,
-    order: nextOrder(),
-    subgroup: "farmoreos-products",
-    ingredients: [
-        {type: "item", name: "iron-plate", amount: 10},
-    ],
-    results: [
-        {type: "item", name: "farmoreos-bread-pan", amount: 1},
-    ],
-    energy_required: 1,
-} satisfies RecipePrototype]);
 data.extend([{
     type: "recipe",
     name: "farmoreos-flour",
@@ -791,7 +747,7 @@ data.extend([{
     subgroup: "farmoreos-products",
     ingredients: [{type: "item", name: "farmoreos-wheat", amount: 1}],
     results: [{type: "item", name: "farmoreos-flour", amount: 1}],
-    energy_required: 50,
+    energy_required: 5,
 } satisfies RecipePrototype]);
 data.extend([{
     type: "recipe",
@@ -802,46 +758,12 @@ data.extend([{
     order: nextOrder(),
     subgroup: "farmoreos-products",
     ingredients: [
-        {type: "item", name: "farmoreos-flour", amount: 11},
+        {type: "item", name: "farmoreos-flour", amount: 10},
         {type: "fluid", name: "water", amount: 1},
     ],
     results: [{type: "item", name: "farmoreos-dough-unrisen", amount: 1}],
     energy_required: 10,
     result_is_always_fresh: true,
-} satisfies RecipePrototype]);
-data.extend([{
-    type: "recipe",
-    name: "farmoreos-dough-panned",
-    category: "farmoreos-filling",
-    additional_categories: ["organic-or-hand-crafting"],
-    icon: "__farmoreos__/art/dough-panned.png",
-    icon_size: 32,
-    order: nextOrder(),
-    subgroup: "farmoreos-products",
-    ingredients: [
-        {type: "item", name: "farmoreos-bread-pan", amount: 1},
-        {type: "item", name: "farmoreos-dough-risen", amount: 1},
-    ],
-    results: [{type: "item", name: "farmoreos-dough-panned", amount: 1}],
-    energy_required: 1,
-} satisfies RecipePrototype]);
-data.extend([{
-    type: "recipe",
-    name: "farmoreos-bread",
-    category: "farmoreos-filling",
-    additional_categories: ["organic-or-hand-crafting"],
-    icon: "__farmoreos__/art/bread.png",
-    icon_size: 32,
-    order: nextOrder(),
-    subgroup: "farmoreos-products",
-    ingredients: [
-        {type: "item", name: "farmoreos-dough-cooked", amount: 1},
-    ],
-    results: [
-        {type: "item", name: "farmoreos-bread", amount: 1},
-        {type: "item", name: "farmoreos-bread-pan", amount: 1},
-    ],
-    energy_required: 1,
 } satisfies RecipePrototype]);
 data.extend([{
     type: "recipe",
@@ -860,6 +782,58 @@ data.extend([{
     ],
     energy_required: 1,
 } satisfies RecipePrototype]);
+
+data.extend([{
+    type: "item",
+    name: "farmoreos-food-belt-slow",
+    icon: "__farmoreos__/art/food_belt.png",
+    icon_size: 32,
+    order: nextOrder(),
+    subgroup: "farmoreos-transportation",
+    place_result: "farmoreos-food-belt-slow",
+    stack_size: 100,
+} satisfies ItemPrototype]);
+data.extend([{
+    type: "recipe",
+    name: "farmoreos-food-belt-slow",
+    icon: "__farmoreos__/art/food_belt.png",
+    icon_size: 32,
+    order: nextOrder(),
+    subgroup: "farmoreos-transportation",
+    ingredients: [
+        {type: "item", name: "iron-plate", amount: 10},
+    ],
+    results: [
+        {type: "item", name: "farmoreos-food-belt-slow", amount: 1},
+    ],
+    energy_required: 1,
+} satisfies RecipePrototype]);
+data.extend([{
+    type: "transport-belt",
+    name: "farmoreos-food-belt-slow", // @name entity-name.farmoreos-food-belt-slow=Slow Food Belt
+    order: nextOrder(),
+    icon: "__farmoreos__/art/food_belt.png",
+    icon_size: 32,
+    flags: ["placeable-neutral", "player-creation"],
+    minable: {mining_time: 0.1, result: "farmoreos-food-belt"},
+    max_health: 150,
+    resistances: [{type: "fire", percent: 99}],
+    collision_box: [[-0.4, -0.4], [0.4, 0.4]],
+    selection_box: [[-0.5, -0.5], [0.5, 0.5]],
+    belt_animation_set: {
+        animation_set: {
+            filename: "__farmoreos__/art/food_belt.png",
+            size: 32,
+            frame_count: 16,
+            direction_count: 20,
+        },
+    },
+    fast_replaceable_group: "transport-belt",
+    // related_underground_belt: "farmoreos-underground-food-belt",
+    next_upgrade: "farmoreos-food-belt",
+    speed: 0.03125 / 15 * 2,
+    animation_speed_coefficient: 32,
+} satisfies TransportBeltPrototype]);
 
 data.extend([{
     type: "item",
@@ -909,7 +883,7 @@ data.extend([{
     fast_replaceable_group: "transport-belt",
     // related_underground_belt: "farmoreos-underground-food-belt",
     next_upgrade: "transport-belt",
-    speed: 0.03125 / 4,
+    speed: 0.03125 / 15 * 10,
     animation_speed_coefficient: 32,
 } satisfies TransportBeltPrototype]);
 
@@ -918,6 +892,10 @@ data.extend([{
 // conveyor-belts:
 // Food Belt
 // Slow Food Belt (for rising or cooking)
+
+// for cooking it would be nice to have a loader -> begin_cooking -> loader, same for end cooking. all in one tile if we can.
+// and then we want a cooking belt which requires heat. it can be frozen, and then you heat it with heat pipes. if it's frozen your food will overcook which is funny.
+// this depends on us being able to prevent food from going on regular belts, which we can't really do probably
 
 declare module "factorio:common" {
   export interface CustomInputNames {}

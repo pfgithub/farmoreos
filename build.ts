@@ -19,7 +19,7 @@ await Bun.write("dist/info.json", JSON.stringify({
     "title": "Farmoreos",
     "author": "pfg",
     "factorio_version": "2.0",
-    "dependencies": ["base >= 2.0"],
+    "dependencies": ["base >= 2.0", "space-age >= 2.0"],
     "description": "Farming mod for Factorio.",
     "spoiling_required": true,
 }));
