@@ -5,6 +5,7 @@ export const hour_to_ticks = hour_to_seconds * 60;
 
 export type ContaminationItem = {name: string, mode: "food-belt" | "cook-belt"};
 export const contamination_items: ContaminationItem[] = [
+    {name: "farmoreos-wheat", mode: "food-belt"},
     {name: "farmoreos-flour", mode: "food-belt"},
     {name: "farmoreos-dough-unrisen", mode: "food-belt"},
     {name: "farmoreos-dough-unrisen-cooking", mode: "cook-belt"},
