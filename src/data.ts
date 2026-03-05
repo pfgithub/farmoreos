@@ -3,7 +3,7 @@ import { EntityPrototypeFlags } from "factorio:prototype";
 import { CapsuleAction } from "factorio:prototype";
 import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ItemGroup, ItemSubGroup, CapsulePrototype, ItemPrototype, TilePrototype, CollisionLayerPrototype, PlantPrototype, RecipeCategory, AssemblingMachinePrototype, FurnacePrototype, TransportBeltPrototype } from "factorio:prototype";
 import * as util from "util";
-import { day_to_seconds, day_to_ticks, hour_to_ticks } from "./constants";
+import { contamination_items, day_to_seconds, day_to_ticks, hour_to_ticks } from "./constants";
 declare const data: PrototypeData;
 declare const mods: ActiveMods;
 declare const feature_flags: FeatureFlags;
@@ -623,13 +623,14 @@ data.extend([{
     fluid_boxes_off_when_no_fluid_recipe: true,
 } satisfies AssemblingMachinePrototype]);
 
-
 function addCookable(item: unknown, cook_to: string, cook_time: number) {
     const cooled = util.copy(item as ItemPrototype);
     const heated = util.copy(item as ItemPrototype);
     heated.name += "-cooking";
     heated.spoil_ticks = cook_time;
     heated.spoil_result = cook_to;
+    // @name farmoreos.cooking=(Cooking)
+    heated.localised_name = ["", [`item-name.${cooled.name}`], " ", [`farmoreos.cooking`]];
     data.extend([cooled, heated]);
 
     data.extend([{
@@ -693,6 +694,7 @@ addCookable({
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-dough-risen=Dough (Risen)
+    // @name item-name.farmoreos-dough-risen-cooking=Dough (Risen) (Cooking)
     name: "farmoreos-dough-risen",
     icon: "__farmoreos__/art/dough-risen.png",
     icon_size: 32,
@@ -704,6 +706,7 @@ addCookable({
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-bread=Bread
+    // @name item-name.farmoreos-bread-cooking=Bread (Cooking)
     name: "farmoreos-bread",
     icon: "__farmoreos__/art/bread.png",
     icon_size: 32,
@@ -882,8 +885,59 @@ data.extend([{
     },
     fast_replaceable_group: "transport-belt",
     // related_underground_belt: "farmoreos-underground-food-belt",
-    next_upgrade: "transport-belt",
     speed: 0.03125 / 15 * 10,
+    animation_speed_coefficient: 32,
+} satisfies TransportBeltPrototype]);
+
+data.extend([{
+    type: "item",
+    name: "farmoreos-cook-belt",
+    icon: "__farmoreos__/art/cook_belt.png",
+    icon_size: 32,
+    order: nextOrder(),
+    subgroup: "farmoreos-transportation",
+    place_result: "farmoreos-cook-belt",
+    stack_size: 100,
+} satisfies ItemPrototype]);
+data.extend([{
+    type: "recipe",
+    name: "farmoreos-cook-belt",
+    icon: "__farmoreos__/art/cook_belt.png",
+    icon_size: 32,
+    order: nextOrder(),
+    subgroup: "farmoreos-transportation",
+    ingredients: [
+        {type: "item", name: "iron-plate", amount: 10},
+    ],
+    results: [
+        {type: "item", name: "farmoreos-cook-belt", amount: 1},
+    ],
+    energy_required: 1,
+} satisfies RecipePrototype]);
+data.extend([{
+    type: "transport-belt",
+    name: "farmoreos-cook-belt", // @name entity-name.farmoreos-cook-belt=Cook Belt
+    order: nextOrder(),
+    icon: "__farmoreos__/art/cook_belt.png",
+    icon_size: 32,
+    flags: ["placeable-neutral", "player-creation"],
+    minable: {mining_time: 0.1, result: "farmoreos-food-belt"},
+    max_health: 150,
+    resistances: [{type: "fire", percent: 99}],
+    collision_box: [[-0.4, -0.4], [0.4, 0.4]], // maybe we can make the collision box a bit larger and have it error if it's touching anything?
+    selection_box: [[-0.5, -0.5], [0.5, 0.5]],
+    belt_animation_set: {
+        animation_set: {
+            filename: "__farmoreos__/art/cook_belt.png",
+            size: 32,
+            frame_count: 16,
+            direction_count: 20,
+        },
+    },
+    fast_replaceable_group: "transport-belt",
+    // related_underground_belt: "farmoreos-underground-food-belt",
+    heating_energy: "10kW",
+    speed: 0.03125 / 15 * 2,
     animation_speed_coefficient: 32,
 } satisfies TransportBeltPrototype]);
 
@@ -902,8 +956,20 @@ data.extend([{
 // and the machines can only be built in a kitchen
 // although you could just put tile on the floor right below them so nevermind
 
+// we could scan around where the player is and where the player's cursor is focused and see if there are any food items on belts. that would work.
+// get entities in a range around every player & every player's focused entity - check if any food items on transport-belt - yes? delete
+// and we can also require kitchen tile this way, ie a food belt must be placed on kitchen tile & regular stuff can't be placed on kitchen tile.
+
 declare module "factorio:common" {
   export interface CustomInputNames {}
+}
+
+for (const item of contamination_items) {
+    // @name farmoreos-description.food-belt=Food must only touch food-safe surfaces.
+    // @name farmoreos-description.cook-belt=Cooking food must only go on cooking belts.
+    const item_proto = data.raw.item[item.name] ?? data.raw.capsule[item.name];
+    if (!item_proto) error("missing item "+item.name);
+    item_proto.localised_description = [`farmoreos-description.${item.mode}`];
 }
 
 export {};

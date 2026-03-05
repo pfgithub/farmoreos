@@ -1,9 +1,10 @@
-import { LuaEntity, LuaGameScript, LuaPrototypes, LuaSurface, TileWrite } from "factorio:runtime";
-import { day_to_ticks } from "./constants";
+import { LuaControl, LuaEntity, LuaGameScript, LuaPrototypes, LuaSurface, TileWrite } from "factorio:runtime";
+import { contamination_items, ContaminationItem, day_to_ticks } from "./constants";
 
 declare const game: LuaGameScript;
 declare const storage: {
     queue?: Queue,
+    contamination_test_index?: number,
 };
 declare const prototypes: LuaPrototypes;
 
@@ -222,7 +223,54 @@ script.on_event(defines.events.on_tick, event => {
         queueDequeue(queue);
         executeQueueItem(peek);
     }
+
+    // TODO: for multiplayer, let's check only one player each tick
+    storage.contamination_test_index ??= 0;
+    storage.contamination_test_index += 1;
+    storage.contamination_test_index %= contamination_items.length;
+    const contamination_item = contamination_items[storage.contamination_test_index]!;
+    for (const [, player] of game.players) {
+        detectFoodOnBelts(player, contamination_item);
+        if (player.selected) detectFoodOnBelts(player.selected, contamination_item);
+    }
 });
+
+function detectFoodOnBelts(around: {surface: LuaSurface, position: {x: number, y: number}}, contamination_item: ContaminationItem) {
+    const belts = around.surface.find_entities_filtered({
+        area: [[around.position.x - 5, around.position.y - 5], [around.position.x + 5, around.position.y + 5]],
+        type: "transport-belt",
+    });
+    for (const belt of belts) {
+        if (contamination_item.mode === "food-belt") {
+            if (belt.name === "farmoreos-food-belt" || belt.name === "farmoreos-food-belt-slow") continue;
+        } else if (contamination_item.mode === "cook-belt") {
+            if (belt.name === "farmoreos-cook-belt") continue;
+        }
+        const test_name = contamination_item.name;
+        const flour_count = belt.get_item_count(test_name);
+        if (flour_count > 0) {
+            for (let line_index = 0; line_index < belt.get_max_transport_line_index(); line_index += 1) {
+                const line = belt.get_transport_line(line_index + 1);
+                const contents = line.get_detailed_contents();
+                for (const item of contents) {
+                    const stack_name = item.stack.name;
+                    if (stack_name === test_name) {
+                        item.stack.set_stack({name: "spoilage", count: item.stack.count});
+                    }
+                }
+            }
+            for (const [, player] of game.players) {
+                // @name alert.farmoreos-food-contaminated=Food Contaminated
+                player.add_custom_alert(belt, {type: "item", name: test_name}, ["alert.farmoreos-food-contaminated"], true);
+                player.create_local_flying_text({
+                    text: ["alert.farmoreos-food-contaminated"],
+                    position: belt.position,
+                    color: [1, 0, 0],
+                });
+            }
+        }
+    }
+}
 
 function dump(a: any) {
     game.print(serpent.block(a));
