@@ -1,7 +1,7 @@
 import { PrototypeData, ActiveMods, FeatureFlags } from "factorio:common"
 import { EntityPrototypeFlags } from "factorio:prototype";
 import { CapsuleAction } from "factorio:prototype";
-import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ItemGroup, ItemSubGroup, CapsulePrototype, ItemPrototype, TilePrototype, CollisionLayerPrototype, PlantPrototype, RecipeCategory, AssemblingMachinePrototype, FurnacePrototype } from "factorio:prototype";
+import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ItemGroup, ItemSubGroup, CapsulePrototype, ItemPrototype, TilePrototype, CollisionLayerPrototype, PlantPrototype, RecipeCategory, AssemblingMachinePrototype, FurnacePrototype, TransportBeltPrototype } from "factorio:prototype";
 import * as util from "util";
 import { day_to_seconds, day_to_ticks, hour_to_ticks } from "./constants";
 declare const data: PrototypeData;
@@ -77,6 +77,13 @@ data.extend([{
 data.extend([{
     type: "item-subgroup",
     name: "farmoreos-machines",
+    group: "farmoreos-group",
+    order: nextOrder(),
+} satisfies ItemSubGroup]);
+
+data.extend([{
+    type: "item-subgroup",
+    name: "farmoreos-transportation",
     group: "farmoreos-group",
     order: nextOrder(),
 } satisfies ItemSubGroup]);
@@ -861,6 +868,58 @@ data.extend([{
     ],
     energy_required: 1,
 } satisfies RecipePrototype]);
+
+data.extend([{
+    type: "item",
+    name: "farmoreos-food-belt",
+    icon: "__farmoreos__/art/food_belt.png",
+    icon_size: 32,
+    order: nextOrder(),
+    subgroup: "farmoreos-transportation",
+    place_result: "farmoreos-food-belt",
+    stack_size: 100,
+} satisfies ItemPrototype]);
+data.extend([{
+    type: "recipe",
+    name: "farmoreos-food-belt",
+    icon: "__farmoreos__/art/food_belt.png",
+    icon_size: 32,
+    order: nextOrder(),
+    subgroup: "farmoreos-transportation",
+    ingredients: [
+        {type: "item", name: "iron-plate", amount: 10},
+    ],
+    results: [
+        {type: "item", name: "farmoreos-food-belt", amount: 1},
+    ],
+    energy_required: 1,
+} satisfies RecipePrototype]);
+data.extend([{
+    type: "transport-belt",
+    name: "farmoreos-food-belt", // @name entity-name.farmoreos-food-belt=Food Belt
+    order: nextOrder(),
+    icon: "__farmoreos__/art/food_belt.png",
+    icon_size: 32,
+    flags: ["placeable-neutral", "player-creation"],
+    minable: {mining_time: 0.1, result: "farmoreos-food-belt"},
+    max_health: 150,
+    resistances: [{type: "fire", percent: 99}],
+    collision_box: [[-0.4, -0.4], [0.4, 0.4]],
+    selection_box: [[-0.5, -0.5], [0.5, 0.5]],
+    belt_animation_set: {
+        animation_set: {
+            filename: "__farmoreos__/art/food_belt.png",
+            size: 32,
+            frame_count: 16,
+            direction_count: 20,
+        },
+    },
+    fast_replaceable_group: "transport-belt",
+    // related_underground_belt: "farmoreos-underground-food-belt",
+    next_upgrade: "transport-belt",
+    speed: 0.03125 / 4,
+    animation_speed_coefficient: 32,
+} satisfies TransportBeltPrototype]);
 
 // we could do ethanol & such
 
