@@ -897,6 +897,11 @@ data.extend([{
 // and then we want a cooking belt which requires heat. it can be frozen, and then you heat it with heat pipes. if it's frozen your food will overcook which is funny.
 // this depends on us being able to prevent food from going on regular belts, which we can't really do probably
 
+// what we could do is require machines be placed on kitchen tile, and then limit what can go on kitchen tile
+// ie transport belts can't go on kitchen tile because they collide (we tell kitchen tile it has a building collision layer)
+// and the machines can only be built in a kitchen
+// although you could just put tile on the floor right below them so nevermind
+
 declare module "factorio:common" {
   export interface CustomInputNames {}
 }
