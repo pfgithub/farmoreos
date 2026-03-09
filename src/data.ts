@@ -915,6 +915,10 @@ data.extend([{
     energy_required: 1,
 } satisfies RecipePrototype]);
 data.extend([{
+    // unfortunately instead of this we probably want to use a furnace-like entity that is long
+    // because for this to work we would need a loader -> furnace -> loader -> belt on both sides unless we want the mod to be
+    //    watching every intersection with these belts and converting the items there (bad for ups)
+    // and if it's a machine then we can use heat input for it. can't do that with a belt unless the entire planet has entities_require_heating set
     type: "transport-belt",
     name: "farmoreos-cook-belt", // @name entity-name.farmoreos-cook-belt=Cook Belt
     order: nextOrder(),
