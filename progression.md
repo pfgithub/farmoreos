@@ -14,6 +14,15 @@ science:
 - t4: oreo
   - chocolate, ..., dough fluid, filling fluid, injection mold, ...
 
+unlocks:
+- t1:
+  - food safety, electric blender, scythe, upgraded watering can
+- t2:
+  - automated sprinkler t1
+- t3:
+  - farming vehicle, automated sprinkler t2
+- t4:
+  - fully automated farming
 
 
 basic farming (mine 10 trees):
