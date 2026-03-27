@@ -1,4 +1,4 @@
-import { LuaControl, LuaEntity, LuaGameScript, LuaPrototypes, LuaSurface, TileWrite } from "factorio:runtime";
+import { LuaControl, LuaEntity, LuaGameScript, LuaPlayer, LuaPrototypes, LuaSurface, TileWrite } from "factorio:runtime";
 import { contamination_items, ContaminationItem, day_to_ticks } from "./constants";
 
 declare const game: LuaGameScript;
@@ -70,7 +70,7 @@ script.on_event(defines.events.on_player_used_capsule, event => {
         if (player.cursor_stack?.name != "farmoreos-watering-can-empty") return;
         const tile = player.surface.get_tile(event.position);
         if (tile.prototype.fluid?.name === "water") {
-            player.cursor_stack.set_stack({name: "farmoreos-watering-can", count: 1, durability: 50});
+            wateringCanSwap(player, "farmoreos-watering-can");
         } else if (tile.prototype.collision_mask.layers.farmoreos_farmable) {
             player.create_local_flying_text({
                 text: ["error.farmoreos-out-of-water"], // @name error.farmoreos-out-of-water=Out of water. Must refill.
@@ -119,7 +119,7 @@ script.on_event(defines.events.on_player_used_capsule, event => {
 
         const new_health = player.cursor_stack.health - (1 / 50);
         if (new_health <= 0) {
-            player.cursor_stack.set_stack({name: "farmoreos-watering-can-empty"});
+            wateringCanSwap(player, "farmoreos-watering-can-empty");
         }else {
             player.cursor_stack.set_stack({name: "farmoreos-watering-can", health: new_health});
         }
@@ -138,13 +138,29 @@ script.on_event(defines.events.on_player_used_capsule, event => {
         updateGrowth(player.surface, event.position.x, event.position.y);
     }
 });
-script.on_event(defines.events.on_player_built_tile, event => {
-    if (event.item?.name === "farmoreos-hoe") {
-        const player = game.get_player(event.player_index);
-        if (!player) return;
-        player.cursor_stack?.set_stack({name: "farmoreos-hoe", count: event.tiles.length});
+
+function wateringCanSwap(player: LuaPlayer, to_name: string) {
+    if (!player.cursor_stack) return;
+    const from_health = player.cursor_stack.health;
+    const from_name = player.cursor_stack.name
+    player.cursor_stack.set_stack({name: to_name});
+    if (player.get_item_count(from_name) == 0) {
+        for (let i = 1; i <= 100; i++) {
+            const slot = player.get_quick_bar_slot(i);
+            if (typeof slot !== "string" && (slot?.name as unknown as string) === from_name) {
+                player.set_quick_bar_slot(i, to_name);
+            }
+        }
+    } else {
+        const inventory = player.get_inventory(defines.inventory.character_main);
+        if (inventory) {
+            const [stack, index] = inventory.find_item_stack(from_name);
+            if (stack) {
+                player.cursor_stack.swap_stack(stack);
+            }
+        }
     }
-});
+}
 
 const wet_crop_names = new Set(["farmoreos-wheat", "farmoreos-kale-plant"]);
 const dry_crop_names = new Set();

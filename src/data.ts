@@ -1077,7 +1077,7 @@ declare module "factorio:common" {
 for (const item of contamination_items) {
     // @name farmoreos-description.food-belt=Food must only touch food-safe surfaces.
     // @name farmoreos-description.cook-belt=Cooking food must only go on cooking belts.
-    const item_proto = data.raw.item[item.name] ?? data.raw.capsule[item.name];
+    const item_proto = data.raw.item[item.name] ?? data.raw.capsule[item.name] ?? data.raw.tool[item.name];
     if (!item_proto) error("missing item "+item.name);
     item_proto.localised_description = [`farmoreos-description.${item.mode}`];
 }
