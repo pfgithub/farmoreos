@@ -17,4 +17,7 @@ export const contamination_items: ContaminationItem[] = [
     {name: "farmoreos-bread-slice-cooking", mode: "cook-belt"},
     {name: "farmoreos-toast", mode: "food-belt"},
     {name: "farmoreos-toast-cooking", mode: "cook-belt"},
+
+    {name: "farmoreos-kale-leaf", mode: "food-belt"},
+    {name: "farmoreos-kale-smoothie", mode: "food-belt"},
 ];

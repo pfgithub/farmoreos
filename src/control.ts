@@ -146,7 +146,7 @@ script.on_event(defines.events.on_player_built_tile, event => {
     }
 });
 
-const wet_crop_names = new Set(["farmoreos-wheat"]);
+const wet_crop_names = new Set(["farmoreos-wheat", "farmoreos-kale-plant"]);
 const dry_crop_names = new Set();
 for (const crop_name of wet_crop_names) {
     dry_crop_names.add(crop_name + "-unwatered");
@@ -160,22 +160,23 @@ script.on_event(defines.events.on_built_entity, event => {
 function updateGrowth(surface: LuaSurface, x: number, y: number) {
     x = math.floor(x);
     y = math.floor(y);
-    const entities = surface.find_entities_filtered({area: [[x, y], [x + 1, y + 1]], type: "plant"});
+    const entities = surface.find_entities_filtered({area: [[x, y], [x + 1, y + 1]], collision_mask: "farmoreos_farm_plant"});
     for (const entity of entities) {
         updateGrowthPlant(entity);
     }
 }
 function updateGrowthPlant(entity: LuaEntity) {
+    if (!entity.prototype.collision_mask.layers.farmoreos_farm_plant) return;
     const surface = entity.surface;
-    if (wet_crop_names.has(entity.name)) {
-        const tile = surface.get_tile(entity.position);
-        if (tile.name !== "farmoreos-farmland-wet") {
-            replacePlant(entity, entity.name + "-unwatered");
-        }
-    } else if (dry_crop_names.has(entity.name)) {
+    if (entity.name.endsWith("-unwatered")) {
         const tile = surface.get_tile(entity.position);
         if (tile.name === "farmoreos-farmland-wet") {
             replacePlant(entity, entity.name.substring(0, entity.name.length - "-unwatered".length));
+        }
+    } else {
+        const tile = surface.get_tile(entity.position);
+        if (tile.name !== "farmoreos-farmland-wet") {
+            replacePlant(entity, entity.name + "-unwatered");
         }
     }
 }
@@ -184,14 +185,16 @@ function replacePlant(entity: LuaEntity, next_name: string) {
     const current_position = [entity.position.x, entity.position.y] as const;
     const current_growth_duration = entity.prototype.growth_ticks!;
     const next_growth_duration = prototypes.entity[next_name]!.growth_ticks!;
-    const current_growth = current_growth_duration - (entity.tick_grown - game.tick);
+    const tick_grown = entity.tick_grown;
+    const current_growth = current_growth_duration - (tick_grown - game.tick);
     const next_growth = current_growth / current_growth_duration * next_growth_duration;
     const surface = entity.surface;
+    const next_tick_grown = game.tick >= tick_grown ? tick_grown : next_growth_duration - next_growth + game.tick;
     entity.destroy();
     const created = surface.create_entity({
         name: next_name,
         position: current_position,
-        tick_grown: next_growth_duration - next_growth + game.tick,
+        tick_grown: next_tick_grown,
         // player: current_player,
     });
     if (created) {

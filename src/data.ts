@@ -1,7 +1,5 @@
-import { PrototypeData, ActiveMods, FeatureFlags } from "factorio:common"
-import { EntityPrototypeFlags } from "factorio:prototype";
-import { CapsuleAction } from "factorio:prototype";
-import { ArmorPrototype, RecipePrototype, ShortcutPrototype, ItemGroup, ItemSubGroup, CapsulePrototype, ItemPrototype, TilePrototype, CollisionLayerPrototype, PlantPrototype, RecipeCategory, AssemblingMachinePrototype, FurnacePrototype, TransportBeltPrototype } from "factorio:prototype";
+import { ActiveMods, FeatureFlags, PrototypeData } from "factorio:common";
+import { AssemblingMachinePrototype, CapsuleAction, CapsulePrototype, CollisionLayerPrototype, Color, EntityPrototypeFlags, FurnacePrototype, ItemGroup, ItemPrototype, ItemSubGroup, ItemToPlace, PlantPrototype, ProductPrototype, RecipeCategory, RecipePrototype, ShortcutPrototype, TilePrototype, ToolPrototype, TransportBeltPrototype } from "factorio:prototype";
 import * as util from "util";
 import { contamination_items, day_to_seconds, day_to_ticks, hour_to_ticks } from "./constants";
 declare const data: PrototypeData;
@@ -103,6 +101,12 @@ data.extend([{
 data.extend([{
     type: "item-subgroup",
     name: "farmoreos-cooling",
+    group: "farmoreos-group",
+    order: nextOrder(),
+} satisfies ItemSubGroup]);
+data.extend([{
+    type: "item-subgroup",
+    name: "farmoreos-science",
     group: "farmoreos-group",
     order: nextOrder(),
 } satisfies ItemSubGroup]);
@@ -309,74 +313,183 @@ data.extend([{
     type: "collision-layer",
     name: "farmoreos_farmland_dry",
 } satisfies CollisionLayerPrototype]);
+data.extend([{
+    type: "collision-layer",
+    name: "farmoreos_farm_plant",
+} satisfies CollisionLayerPrototype]);
 
 const plant_flags: EntityPrototypeFlags = ["placeable-neutral", "breaths-air"]; // "placeable-off-grid"?
 
-function addPlant(plant_data: PlantPrototype) {
+function addPlant(plant_data: PlantPrototype, alt_texture?: string) {
     const unwatered_growing = util.copy(plant_data);
     const watered_growing = util.copy(plant_data);
     unwatered_growing.name += "-unwatered";
+    // @name farmoreos.unwatered=__1__ (Unwatered)
+    unwatered_growing.localised_name = ["farmoreos.unwatered", [`entity-name.${watered_growing.name}`]];
 
+    if (alt_texture) {
+        unwatered_growing.icon = alt_texture;
+        unwatered_growing.variations![0]!.leaves.filename = alt_texture;
+    }
+    
     unwatered_growing.growth_ticks *= 32;
     data.extend([unwatered_growing, watered_growing]);
 }
 
-addPlant({
-    type: "plant",
-    // @name entity-name.farmoreos-wheat-unwatered=Wheat (Unwatered)
+function quickAddPlant(opts: {name: string, texture: string, texture_size: number, alt_texture?: string, results: ProductPrototype[], growth_ticks: number, color: Color, placeable_by: ItemToPlace}) {
+    addPlant({
+        type: "plant",
+        name: opts.name,
+        icon: opts.texture,
+        icon_size: opts.texture_size,
+        flags: plant_flags,
+        collision_mask: {
+            layers: {item: true, object: true, water_tile: true, elevated_rail: true, is_lower_object: true, farmoreos_farm_plant: true},
+        },
+        order: nextOrder(),
+        subgroup: "farmoreos-plants",
+        variations: [
+            {
+                trunk: {
+                    filename: "__farmoreos__/art/empty.png",
+                    flags: ["mipmap"],
+                    surface: "nauvis",
+                    size: 1,
+                    frame_count: 2,
+                },
+                leaves: {
+                    filename: opts.texture,
+                    flags: ["mipmap"],
+                    surface: "nauvis",
+                    size: opts.texture_size,
+                    scale: 32 / opts.texture_size,
+                    frame_count: 1,
+                },
+                leaf_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 0.5, initial_vertical_speed: 0.01, speed_from_center: 0.01},
+                branch_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 0.5, initial_vertical_speed: 0.01, speed_from_center: 0.01},
+            }
+        ],
+        growth_ticks: opts.growth_ticks,
+        minable: {
+            mining_time: 0.01,
+            results: opts.results,
+        },
+        selection_box: [[-0.4, -0.4], [0.4, 0.5]],
+        collision_box: [[-0.2, -0.2], [0.2, 0.2]],
+        emissions_per_second: { pollution: -0.001 },
+        tile_buildability_rules: [
+            {
+                area: [[-0.4, -0.4], [0.4, 0.4]],
+                required_tiles: {
+                    layers: {
+                        farmoreos_farmable: true,
+                    }
+                },
+            },
+        ],
+        colors: [opts.color],
+        placeable_by: opts.placeable_by,
+        // consider setting autoplace?
+    }, opts.alt_texture);
+}
+
+quickAddPlant({
+    // @name entity-name.farmoreos-kale-plant=Kale Plant
+    name: "farmoreos-kale-plant",
+    texture: "__farmoreos__/art/kale-plant2.png",
+    alt_texture: "__farmoreos__/art/kale-plant2-unwatered.png",
+    texture_size: 64,
+    growth_ticks: 2 * day_to_ticks,
+    results: [
+        {type: "item", name: "farmoreos-kale-leaf", amount: 10},
+        {type: "item", name: "farmoreos-kale-seeds", amount: 1, extra_count_fraction: 0.1},
+    ],
+    color: [69 / 255, 115 / 255, 33 / 255],
+    placeable_by: {item: "farmoreos-kale-seeds", count: 1},
+});
+data.extend([{
+    type: "item",
+    name: "farmoreos-kale-seeds",
+    // @name item-name.farmoreos-kale-seeds=Kale Seeds
+    localised_name: ["item-name.farmoreos-kale-seeds"],
+    icon: "__farmoreos__/art/kale-seeds.png",
+    icon_size: 64,
+    subgroup: "farmoreos-seeds",
+    order: nextOrder(),
+    stack_size: 100,
+
+    fuel_category: "chemical",
+    fuel_value: "1kJ",
+    fuel_acceleration_multiplier: 0.25,
+    fuel_top_speed_multiplier: 0.25,
+
+    plant_result: "farmoreos-kale-plant",
+    place_result: "farmoreos-kale-plant",
+} satisfies ItemPrototype]);
+data.extend([{
+    type: "recipe",
+    name: "farmoreos-kale-seeds",
+    enabled: true,
+    energy_required: 8,
+    ingredients: [
+        {type: "item", name: "wood", amount: 10},
+    ],
+    results: [{type: "item", name: "farmoreos-kale-seeds", amount: 1}],
+} satisfies RecipePrototype]);
+data.extend([{
+    type: "capsule",
+    // @name item-name.farmoreos-kale-leaf=Kale Leaf
+    name: "farmoreos-kale-leaf",
+    icon: "__farmoreos__/art/kale-leaf2.png",
+    icon_size: 64,
+    subgroup: "farmoreos-vegetables",
+    order: nextOrder(),
+    stack_size: 100,
+    capsule_action: damageEffect(-5, 30),
+} satisfies CapsulePrototype]);
+data.extend([{
+    type: "recipe",
+    name: "farmoreos-kale-smoothie",
+    category: "farmoreos-blending",
+    icon: "__farmoreos__/art/kale-smoothie.png",
+    icon_size: 64,
+    order: nextOrder(),
+    subgroup: "farmoreos-science",
+    ingredients: [
+        {type: "item", name: "farmoreos-kale-leaf", amount: 10},
+    ],
+    results: [{type: "item", name: "farmoreos-kale-smoothie", amount: 1}],
+    energy_required: 10,
+    result_is_always_fresh: true,
+} satisfies RecipePrototype]);
+data.extend([{
+    type: "tool",
+    // @name item-name.farmoreos-kale-smoothie=Kale Smoothie
+    name: "farmoreos-kale-smoothie",
+    icon: "__farmoreos__/art/kale-smoothie.png",
+    icon_size: 64,
+    subgroup: "farmoreos-science",
+    order: nextOrder(),
+
+    stack_size: 100,
+    durability: 1,
+    durability_description_key: "description.science-pack-remaining-amount-key",
+    durability_description_value: "description.science-pack-remaining-amount-value",
+} satisfies ToolPrototype]);
+
+
+quickAddPlant({
     // @name entity-name.farmoreos-wheat=Wheat
     name: "farmoreos-wheat",
-    icon: "__farmoreos__/art/wheat.png",
-    icon_size: 32,
-    flags: plant_flags,
-    collision_mask: {
-        layers: {item: true, object: true, water_tile: true, elevated_rail: true, is_lower_object: true},
-    },
-    subgroup: "farmoreos-plants",
-    variations: [
-        {
-            trunk: {
-                filename: "__farmoreos__/art/empty.png",
-                flags: ["mipmap"],
-                surface: "nauvis",
-                size: 1,
-                frame_count: 2,
-            },
-            leaves: {
-                filename: "__farmoreos__/art/wheat.png",
-                flags: ["mipmap"],
-                surface: "nauvis",
-                size: 32,
-                frame_count: 1,
-            },
-            leaf_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 0.5, initial_vertical_speed: 0.01, speed_from_center: 0.01},
-            branch_generation: {type: "create-particle", particle_name: "leaf-particle", initial_height: 0.5, initial_vertical_speed: 0.01, speed_from_center: 0.01},
-        }
-    ],
+    texture: "__farmoreos__/art/wheat.png",
+    texture_size: 32,
     growth_ticks: 2 * day_to_ticks,
-    minable: {
-        mining_time: 0.01,
-        results: [
-            {type: "item", name: "farmoreos-wheat", amount: 10},
-            {type: "item", name: "farmoreos-wheat-seeds", amount: 1, extra_count_fraction: 0.1}, // ideally we would always give 1 even if not fully grown
-        ],
-    },
-    selection_box: [[-0.4, -0.4], [0.4, 0.5]],
-    collision_box: [[-0.2, -0.2], [0.2, 0.2]],
-    emissions_per_second: { pollution: -0.001 },
-    tile_buildability_rules: [
-        {
-            area: [[-0.4, -0.4], [0.4, 0.4]],
-            required_tiles: {
-                layers: {
-                    farmoreos_farmable: true,
-                }
-            },
-        },
+    results: [
+        {type: "item", name: "farmoreos-wheat", amount: 10},
+        {type: "item", name: "farmoreos-wheat-seeds", amount: 1, extra_count_fraction: 0.1}, // ideally we would always give 1 even if not fully grown
     ],
-    colors: [[238 / 255, 195 / 255, 154 / 255]],
+    color: [238 / 255, 195 / 255, 154 / 255],
     placeable_by: {item: "farmoreos-wheat-seeds", count: 1},
-    // consider setting autoplace?
 });
 
 data.extend([{
@@ -466,6 +579,11 @@ data.extend([{
 data.extend([{
     type: "recipe-category",
     name: "farmoreos-slicing",
+    order: nextOrder(),
+} satisfies RecipeCategory]);
+data.extend([{
+    type: "recipe-category",
+    name: "farmoreos-blending",
     order: nextOrder(),
 } satisfies RecipeCategory]);
 data.extend([{
@@ -629,8 +747,8 @@ function addCookable(item: unknown, cook_to: string, cook_time: number) {
     heated.name += "-cooking";
     heated.spoil_ticks = cook_time;
     heated.spoil_result = cook_to;
-    // @name farmoreos.cooking=(Cooking)
-    heated.localised_name = ["", [`item-name.${cooled.name}`], " ", [`farmoreos.cooking`]];
+    // @name farmoreos.cooking=__1__ (Cooking)
+    heated.localised_name = ["farmoreos.cooking", [`item-name.${cooled.name}`]];
     data.extend([cooled, heated]);
 
     data.extend([{
@@ -679,7 +797,6 @@ data.extend([{
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-dough-unrisen=Dough (Unrisen)
-    // @name item-name.farmoreos-dough-unrisen-cooking=Dough (Unrisen) (Cooking)
     name: "farmoreos-dough-unrisen",
     icon: "__farmoreos__/art/dough-unrisen.png",
     icon_size: 32,
@@ -694,7 +811,6 @@ addCookable({
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-dough-risen=Dough (Risen)
-    // @name item-name.farmoreos-dough-risen-cooking=Dough (Risen) (Cooking)
     name: "farmoreos-dough-risen",
     icon: "__farmoreos__/art/dough-risen.png",
     icon_size: 32,
@@ -706,7 +822,6 @@ addCookable({
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-bread=Bread
-    // @name item-name.farmoreos-bread-cooking=Bread (Cooking)
     name: "farmoreos-bread",
     icon: "__farmoreos__/art/bread.png",
     icon_size: 32,
@@ -718,7 +833,6 @@ addCookable({
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-bread-slice=Bread Slice
-    // @name item-name.farmoreos-bread-slice-cooking=Bread Slice (Cooking)
     name: "farmoreos-bread-slice",
     icon: "__farmoreos__/art/bread-slice.png",
     icon_size: 32,
@@ -730,7 +844,6 @@ addCookable({
 addCookable({
     type: "capsule",
     // @name item-name.farmoreos-toast=Toast
-    // @name item-name.farmoreos-toast-cooking=Toast (Cooking)
     name: "farmoreos-toast",
     icon: "__farmoreos__/art/toast.png",
     icon_size: 32,
@@ -969,4 +1082,4 @@ for (const item of contamination_items) {
     item_proto.localised_description = [`farmoreos-description.${item.mode}`];
 }
 
-export {};
+export { };
