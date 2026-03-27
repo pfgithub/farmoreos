@@ -13,6 +13,19 @@ science:
   - combine toasted bread, peanut butter, strawberry jam to pb&j
 - t4: oreo
   - chocolate, ..., dough fluid, filling fluid, injection mold, ...
+- t5: burger & fries
+  - toast
+  - salted tomato, allowed to sit
+  - arugula
+  - potato, cut, breaded, fried in olive oil
+  - cucumber, pickled in vinegar, sliced
+  - beef, ground, cooked
+  - oil+egg(cracked,seperated)+lemon juice, mayonnaisefied
+
+
+problems:
+- what do you use the food for other than science?
+
 
 unlocks:
 - t1:
