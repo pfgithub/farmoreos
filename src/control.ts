@@ -1,4 +1,4 @@
-import { LuaControl, LuaEntity, LuaGameScript, LuaPlayer, LuaPrototypes, LuaSurface, TileWrite } from "factorio:runtime";
+import { LuaEntity, LuaGameScript, LuaPlayer, LuaPrototypes, LuaSurface, TileWrite } from "factorio:runtime";
 import { contamination_items, ContaminationItem, day_to_ticks } from "./constants";
 
 declare const game: LuaGameScript;
