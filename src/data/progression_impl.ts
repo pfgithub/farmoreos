@@ -1,4 +1,6 @@
 import { ActiveMods, FeatureFlags, PrototypeData } from "factorio:common";
+import { IconData } from "factorio:prototype";
+import { Modifier } from "factorio:prototype";
 import { AnyPrototype, ItemGroup, ItemSubGroup, RecipeCategory, TechnologyPrototype } from "factorio:prototype";
 declare const data: PrototypeData;
 declare const mods: ActiveMods;
@@ -6,6 +8,8 @@ declare const feature_flags: FeatureFlags;
 
 export type ID<T extends string, Q = unknown> = {kind: T, name: string, prototype: Q};
 const namespace = "farmoreos";
+
+export type Icon = {path: string, size: number};
 
 let next_order = 1000;
 function nextOrder(): string {
@@ -20,14 +24,13 @@ export function mkret<T extends string, U extends AnyPrototype>(kind: NoInfer<T>
     return {kind, name, prototype: value};
 }
 
-export function itemGroup(name: string, icon: string, icon_size: number): ID<"item-group", ItemGroup> {
+export function itemGroup(name: string, icon: Icon): ID<"item-group", ItemGroup> {
     name = `${namespace}-${name}`;
     return mkret("item-group", name, {
         type: "item-group",
         name,
         order: `z${name}`,
-        icon,
-        icon_size,
+        icons: toIcons(icon),
     });
 }
 export function itemSubgroup(group: ID<"item-group">, name: string): ID<"item-subgroup", ItemSubGroup> {
@@ -49,29 +52,40 @@ export function quickRecipeCategory(name: string): ID<"recipe-category", RecipeC
     });
 }
 
+function toIcons(icon: Icon): IconData[] {
+    return [{icon: icon.path, icon_size: icon.size}];
+}
 
 export function quickTechnology(name: string, opts: {
     essential: boolean,
-    icon: {path: string, size: number},
+    icon: Icon,
     cost: {items: ID<"item">[], count: number, time: number},
-    unlocks: ID<string>[],
+    prerequisites: ID<"technology">[],
+    effects: ID<string>[],
 }): ID<"technology", TechnologyPrototype> {
     name = `${namespace}-${name}`;
     return mkret("technology", name, {
         type: "technology",
         name: name,
-        icon: opts.icon.path,
-        icon_size: opts.icon.size,
+        icons: toIcons(opts.icon),
         essential: opts.essential,
         unit: {
             count: opts.cost.count,
             time: opts.cost.time,
             ingredients: opts.cost.items.map(item => ([item.name, 1])),
         },
+        prerequisites: opts.prerequisites.map(prereq => prereq.name),
+        effects: opts.effects.map((fx): Modifier => {
+            if (fx.kind === "recipe") {
+                return {type: "unlock-recipe", recipe: fx.name};
+            } else {
+                error("todo fx type " + fx);
+            }
+        }),
     });
 }
 
-export function quickItem(subgroup: ID<"item-subgroup">, name: string, picture: string, attrs: {
+export function quickItem(subgroup: ID<"item-subgroup">, name: string, icon: Icon, attrs: {
     contaminable?: boolean,
     edible?: number,
     researchable?: boolean,
@@ -80,6 +94,7 @@ export function quickItem(subgroup: ID<"item-subgroup">, name: string, picture: 
     return id("item", name);
 }
 
+// some recipe types will be special. ie waiting sets spoil properties on the base item. cooking makes heating/cooling recipes & spoilage setups.
 export function quickRecipe(subgroup: ID<"item-subgroup">, name: string, category: ID<"recipe-category">, opts: {
     sec: number,
     from: {name: ID<"item"> | ID<"fluid">, amount: number}[],
